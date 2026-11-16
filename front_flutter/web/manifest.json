@@ -1,0 +1,10 @@
+{
+  "name": "Mangáverse",
+  "short_name": "Mangáverse",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3d1a5b",
+  "description": "Seu universo de mangás.",
+  "icons": [{"src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}

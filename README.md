@@ -1,6 +1,6 @@
 # Mangáverse
 
-Projeto de e-commerce de mangás desenvolvido com Laravel 12, MySQL e Vue 3. O Laravel fornece a API; o frontend Vue fica separado em `front/` e consome os mesmos endpoints que poderão ser usados por um app Flutter no futuro.
+Projeto de e-commerce de mangás com API Laravel 12, MySQL e frontend Vue 3 em `front/`. A migração do frontend para Flutter Web está em andamento na pasta `front_flutter/`, consumindo a mesma API e preservando a versão Vue.
 
 ## Demonstração online
 
@@ -81,6 +81,20 @@ VITE_API_BASE_URL=http://localhost:8000
 O arquivo `.env.local` é local e não deve ser enviado ao Git.
 
 No frontend servido pelo Docker, a API usa o mesmo host do navegador. Para alterar isso, defina `VITE_API_BASE_URL` no `.env` da raiz e reconstrua a imagem com `docker compose up -d --build frontend`. Essa variável é aplicada durante o build do Vue.
+
+## Desenvolver o frontend Flutter Web
+
+A migração para Flutter Web está em `front_flutter/`, preservando o Vue em `front/`. O Flutter oferece catálogo com novidades, busca e filtros, detalhes dos mangás, login, cadastro, carrinho de visitante com merge, perfil, endereços, checkout, pedidos e administração com upload de capas e gestão de entregas.
+
+Com a API local já iniciada pelo Docker e Flutter 3.50 ou superior instalado:
+
+```bash
+cd front_flutter
+flutter pub get
+flutter run -d web-server --web-hostname localhost --web-port 5173
+```
+
+Abra <http://localhost:5173>. O Vue do Docker continua em <http://localhost>. Consulte [as instruções do Flutter](front_flutter/README.md) para configurar o SDK, trocar a API e executar os testes. A Railway pode continuar desligada durante o desenvolvimento local.
 
 ## Verificar a instalação
 

@@ -18,4 +18,15 @@ class LoginRequest extends FormRequest
             'password' => ['required', 'string'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Informe seu e-mail.',
+            'email.email' => 'Informe um e-mail válido.',
+            'email.string' => 'Informe um e-mail válido.',
+            'password.required' => 'Informe sua senha.',
+            'password.string' => 'Informe uma senha válida.',
+        ];
+    }
 }
