@@ -6,3 +6,4 @@ front
 proxy
 storage/logs
 .env.*
+front_flutter

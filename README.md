@@ -1,8 +1,10 @@
 # Mangáverse
 
-Projeto de e-commerce de mangás com API Laravel 12, MySQL e frontend Vue 3 em `front/`. A migração do frontend para Flutter Web está em andamento na pasta `front_flutter/`, consumindo a mesma API e preservando a versão Vue.
+Projeto de e-commerce de mangás com API Laravel 12 e MySQL. Nesta branch, o frontend principal é Flutter Web, em `front_flutter/`. A versão Vue 3 continua preservada em `front/`; ambas consomem a mesma API.
 
 ## Demonstração online
+
+A implantação existente continua em Vue até trocar a pasta raiz e a branch no painel da Vercel, conforme o guia de hospedagem.
 
 - [Loja Mangáverse](https://mangaverse-ecommerce.vercel.app/)
 - [Documentação interativa da API](https://mangaverse-ecommerce.vercel.app/api/docs)
@@ -14,6 +16,7 @@ Para a publicação na Vercel e na Railway, siga [o guia de hospedagem](docs/HOS
 
 - Git
 - Docker Engine e Docker Compose v2
+- O Docker instala o SDK Flutter durante o build. Para desenvolver fora do Docker, use Flutter 3.50 ou superior.
 - Node.js e npm são opcionais, usados apenas para desenvolver o Vue fora do Docker.
 
 ## Instalação em um computador novo
@@ -23,6 +26,7 @@ Clone o repositório e entre na pasta:
 ```bash
 git clone https://github.com/brunosilvamikolojveski/mangaverse-ecommerce.git
 cd mangaverse-ecommerce
+git switch feat/flutter-web
 ```
 
 Crie o arquivo de configuração local:
@@ -47,7 +51,7 @@ Construa as imagens e inicie o frontend, a API, o proxy e o MySQL:
 docker compose up -d --build
 ```
 
-A construção da imagem instala as dependências PHP pelo Composer. O volume `php_vendor` mantém essas dependências visíveis para o container mesmo com o código do projeto montado em `/app`.
+A primeira construção baixa o SDK Flutter 3.50.0, gera os arquivos web e os serve com Nginx. Ela também instala as dependências PHP pelo Composer. O volume `php_vendor` mantém essas dependências visíveis para o container mesmo com o código do projeto montado em `/app`.
 
 Gere a chave da aplicação e crie as tabelas e os dados iniciais:
 
@@ -58,9 +62,25 @@ docker compose exec php php artisan migrate --seed
 
 A loja estará disponível em <http://localhost>, a documentação em <http://localhost/api/docs> e a especificação em <http://localhost/api/docs/openapi.yaml>. A API também está exposta em <http://localhost:8000> para testes diretos. O volume `mysql_data` mantém o banco mesmo quando os contêineres são parados.
 
-O Nginx da pasta `proxy/` encaminha `/api/`, `/sanctum/`, `/storage/` e `/up` para o backend FrankenPHP. As outras URLs vão para o frontend Vue. Os uploads ficam em `storage/app/public`, montado no container, e sobrevivem à sua recriação. Não é necessário executar `artisan serve`.
+O Nginx da pasta `proxy/` encaminha `/api/`, `/sanctum/`, `/storage/` e `/up` para o backend FrankenPHP. As outras URLs vão para o frontend Flutter Web. Os uploads ficam em `storage/app/public`, montado no container, e sobrevivem à sua recriação. Não é necessário executar `artisan serve`.
 
 Não use `docker compose down -v` para atualizar o projeto: esse comando apaga o volume do banco. Para aplicar uma atualização, execute `docker compose up -d --build` e depois `docker compose exec php php artisan migrate`.
+
+## Alternar entre Flutter e Vue no Docker
+
+O Compose padrão serve Flutter em <http://localhost>. Para abrir a versão Vue no mesmo endereço:
+
+```bash
+docker compose -f compose.yaml -f compose.vue.yaml up -d --build --no-deps frontend
+```
+
+Para voltar ao Flutter:
+
+```bash
+docker compose up -d --build --no-deps frontend
+```
+
+Os comandos trocam apenas o frontend. A API, os uploads e o banco continuam no mesmo ambiente.
 
 ## Desenvolver o frontend Vue fora do Docker (opcional)
 
@@ -80,11 +100,11 @@ VITE_API_BASE_URL=http://localhost:8000
 
 O arquivo `.env.local` é local e não deve ser enviado ao Git.
 
-No frontend servido pelo Docker, a API usa o mesmo host do navegador. Para alterar isso, defina `VITE_API_BASE_URL` no `.env` da raiz e reconstrua a imagem com `docker compose up -d --build frontend`. Essa variável é aplicada durante o build do Vue.
+O Vue servido pelo Docker usa o próprio host para acessar a API. Caso precise trocar esse endereço, defina `VITE_API_BASE_URL` no `.env` da raiz e reconstrua usando o comando com `compose.vue.yaml` acima. Essa variável é aplicada durante o build do Vue.
 
 ## Desenvolver o frontend Flutter Web
 
-A migração para Flutter Web está em `front_flutter/`, preservando o Vue em `front/`. O Flutter oferece catálogo com novidades, busca e filtros, detalhes dos mangás, login, cadastro, carrinho de visitante com merge, perfil, endereços, checkout, pedidos e administração com upload de capas e gestão de entregas.
+O Flutter Web está em `front_flutter/`, preservando o Vue em `front/`. O Flutter oferece catálogo com novidades, busca e filtros, detalhes dos mangás, login, cadastro, carrinho de visitante com merge, perfil, endereços, checkout, pedidos e administração com upload de capas e gestão de entregas.
 
 Com a API local já iniciada pelo Docker e Flutter 3.50 ou superior instalado:
 
@@ -94,7 +114,7 @@ flutter pub get
 flutter run -d web-server --web-hostname localhost --web-port 5173
 ```
 
-Abra <http://localhost:5173>. O Vue do Docker continua em <http://localhost>. Consulte [as instruções do Flutter](front_flutter/README.md) para configurar o SDK, trocar a API e executar os testes. A Railway pode continuar desligada durante o desenvolvimento local.
+Abra <http://localhost:5173>. O Flutter compilado pelo Docker fica em <http://localhost>; o servidor de desenvolvimento em 5173 acompanha as alterações no código. Consulte [as instruções do Flutter](front_flutter/README.md) para configurar o SDK, trocar a API e executar os testes. A Railway pode continuar desligada durante o desenvolvimento local.
 
 ## Verificar a instalação
 
@@ -194,4 +214,4 @@ Para apagar também o banco persistido, use `docker compose down -v`.
 - `database/seeders`: papéis, 30 volumes de mangás e contas locais de demonstração
 - `routes/api.php`: rotas da API
 
-O seeder de catálogo cria 10 volumes de cada série: One Piece, Naruto e Death Note. Os nomes e autores são reais; preços e estoques são dados de demonstração. Há um volume sem estoque e outro inativo para demonstrar as regras do catálogo. O Compose usa `Dockerfile.dev`; o `Dockerfile` da raiz instala somente as dependências PHP de produção. Uma implantação pública ainda exige configurações de domínio, HTTPS, segredos e persistência adequadas ao servidor.
+O seeder de catálogo cria 10 volumes de cada série: One Piece, Naruto e Death Note. Os nomes e autores são reais; preços e estoques são dados de demonstração. Há um volume sem estoque e outro inativo para demonstrar as regras do catálogo. O Compose usa `Dockerfile.dev`; o `Dockerfile` da raiz instala somente as dependências PHP de produção. A publicação do Flutter na Vercel usa `front_flutter/vercel.json` e está descrita no guia de hospedagem.

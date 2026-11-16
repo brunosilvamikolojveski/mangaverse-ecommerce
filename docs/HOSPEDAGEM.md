@@ -1,6 +1,6 @@
 # Hospedagem para a apresentação
 
-O Vue fica na Vercel e a API Laravel com MySQL fica na Railway. As requisições passam pelo domínio da Vercel para que os cookies de sessão funcionem no mesmo domínio. O Docker local continua funcionando de forma independente.
+O frontend fica na Vercel e a API Laravel com MySQL fica na Railway. Esta branch prepara o Flutter Web; a configuração anterior do Vue continua em `front/`. As requisições passam pelo domínio da Vercel para que os cookies de sessão funcionem no mesmo domínio. O Docker local continua funcionando de forma independente.
 
 ## 1. Criar o projeto na Railway
 
@@ -58,37 +58,30 @@ Na primeira implantação, `SEED_ON_DEPLOY=true` cria o catálogo. `ADMIN_SEED_E
 
 Depois de confirmar que o catálogo e o admin existem, altere `SEED_ON_DEPLOY=false` e `ADMIN_SEED_ENABLED=false`. Isso evita executar os seeders ou redefinir a senha do admin nas próximas implantações.
 
-## 4. Publicar o Vue na Vercel
+## 4. Publicar o Flutter Web na Vercel
 
-Na Vercel, importe o mesmo repositório pelo GitHub. Escolha:
+Importe o repositório na Vercel ou ajuste o projeto existente. Use a branch `feat/flutter-web` enquanto o Flutter estiver sendo desenvolvido nela. Se o projeto continuar configurado para a branch `main`, ele publicará a versão dessa branch.
 
-- Framework: Vite.
-- Root Directory: `front`.
-- Build Command: `npm run build`.
-- Output Directory: `dist`.
+Configure:
 
-O frontend em produção usa o próprio domínio como endereço da API. Deixe `VITE_API_BASE_URL` sem configurar na Vercel. Antes da publicação final, crie `front/vercel.json` com as regras abaixo, substituindo `SUA-API.up.railway.app` pelo domínio público real da Railway:
+- Framework Preset: Other.
+- Root Directory: `front_flutter`.
+- Build Command: `sh build-web.sh`.
+- Output Directory: `build/web`.
+- Install Command: vazio; as dependências são instaladas pelo script de build.
 
-```json
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://SUA-API.up.railway.app/api/:path*" },
-    { "source": "/sanctum/:path*", "destination": "https://SUA-API.up.railway.app/sanctum/:path*" },
-    { "source": "/storage/:path*", "destination": "https://SUA-API.up.railway.app/storage/:path*" },
-    { "source": "/up", "destination": "https://SUA-API.up.railway.app/up" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
+`front_flutter/vercel.json` já define essas opções, exceto a pasta raiz e a branch, que são selecionadas no painel. O script baixa o SDK Flutter 3.50.0 quando necessário, instala as dependências do `pubspec.lock` e gera os arquivos web. A [documentação do Flutter](https://docs.flutter.dev/deployment/web) descreve a geração do build, e a [documentação da Vercel](https://vercel.com/docs/project-configuration/vercel-json) explica as opções do arquivo de configuração.
+
+Deixe `API_BASE_URL` sem configurar na Vercel. O script gera o frontend usando o próprio domínio para as requisições; as regras de `vercel.json` encaminham `/api/`, `/sanctum/`, `/storage/` e `/up` para a API Railway. Elas apontam para `mangaverse-ecommerce-production.up.railway.app`; atualize os destinos se o domínio da API mudar. `VITE_API_BASE_URL` pertence apenas ao Vue.
 
 Use o domínio definitivo da Vercel em `APP_URL` e `SANCTUM_STATEFUL_DOMAINS` na Railway. `APP_URL` inclui `https://`; `SANCTUM_STATEFUL_DOMAINS` contém apenas o host. Em `SESSION_DOMAIN`, mantenha o padrão vazio, sem definir domínio da Railway nem `.vercel.app`.
+
+Para manter o Vue hospedado, seu projeto continua usando Root Directory `front`, Framework Vite, Build Command `npm run build` e Output Directory `dist`. Os dois frontends têm configurações separadas. Preparar estes arquivos não altera automaticamente o projeto existente no painel da Vercel.
 
 ## 5. Conferir antes da apresentação
 
 Abra uma janela anônima no domínio da Vercel. Navegue no catálogo, adicione um produto ao carrinho, registre uma conta e confira a fusão. Cadastre um endereço, finalize a compra e confirme o pagamento simulado. Depois confira os pedidos e faça login com o admin para atualizar o status e enviar uma capa.
 
-Abra também `/api/docs` e `/api/docs/openapi.yaml` pelo domínio da Vercel. Recarregue uma URL de produto ou pedido para verificar o fallback do Vue Router.
+Abra também `/api/docs` e `/api/docs/openapi.yaml` pelo domínio da Vercel. Recarregue uma URL como `/#/mangas/1` ou `/#/pedidos/1` para verificar a navegação do Flutter. Confira subtotal, frete, total e data do pagamento nos detalhes do pedido.
 
 Depois da apresentação, confira o consumo dos créditos e remova os serviços quando não forem mais necessários. A versão local e seus dados permanecem separados da hospedagem.

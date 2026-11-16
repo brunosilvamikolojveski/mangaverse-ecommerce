@@ -1,0 +1,7 @@
+.dart_tool
+.flutter-sdk
+.flutter-plugins-dependencies
+build
+coverage
+.vercel
+.env*

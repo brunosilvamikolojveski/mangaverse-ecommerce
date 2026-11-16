@@ -9,6 +9,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mangaverse_flutter/main.dart';
 import 'package:mangaverse_flutter/models/upload_file.dart';
 import 'package:mangaverse_flutter/models/manga.dart';
+import 'package:mangaverse_flutter/models/order.dart';
+import 'package:mangaverse_flutter/widgets/order_panel.dart';
 import 'package:mangaverse_flutter/services/admin_service.dart';
 import 'package:mangaverse_flutter/services/api_client.dart';
 import 'package:mangaverse_flutter/widgets/editor_form.dart';
@@ -19,6 +21,8 @@ Map<String, dynamic> orderJson({String status = 'pending'}) => {
   'data': {
     'id': 9,
     'status': status,
+    'subtotal': '31.50',
+    'shipping_cost': '0.00',
     'total': '31.50',
     'shipping_address': {
       'recipient_name': 'Leitor',
@@ -48,6 +52,39 @@ Map<String, dynamic> orderJson({String status = 'pending'}) => {
 };
 
 void main() {
+  for (final shippingCost in ['0.00', '12.90']) {
+    testWidgets(
+      'detalhes mostram valores e data do pagamento com frete $shippingCost',
+      (tester) async {
+        final data = orderJson(status: 'paid')['data'] as Map<String, dynamic>;
+        data['shipping_cost'] = shippingCost;
+        data['total'] = shippingCost == '0.00' ? '31.50' : '44.40';
+        (data['payments'] as List).first['paid_at'] = '2026-11-15T12:30:00Z';
+        final order = StoreOrder.fromJson(data);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: OrderPanel(order: order, showAddress: true),
+              ),
+            ),
+          ),
+        );
+        expect(find.text('Subtotal'), findsOneWidget);
+        expect(find.text('Frete'), findsOneWidget);
+        expect(find.text(order.formattedSubtotal), findsAtLeastNWidgets(1));
+        expect(find.text(order.formattedShippingCost), findsOneWidget);
+        expect(find.text('Total: ${order.formattedTotal}'), findsOneWidget);
+        expect(
+          find.text('Pago em ${formatOrderDate(order.paidAt)}'),
+          findsOneWidget,
+        );
+        expect(order.paidAt, '2026-11-15T12:30:00Z');
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   test(
     'aceita inteiros enviados como texto na resposta de upload do Laravel',
     () {
@@ -228,8 +265,26 @@ void main() {
   );
 
   testWidgets(
-    'checkout cria pedido com endereço, esvazia carrinho e confirma pagamento',
+    'checkout seleciona endereço novo, cria pedido e confirma pagamento',
     (tester) async {
+      tester.view.physicalSize = const Size(1440, 1050);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final addresses = <Map<String, dynamic>>[
+        {
+          'id': 3,
+          'label': 'Casa',
+          'recipient_name': 'Leitor',
+          'street': 'Rua Teste',
+          'number': '123',
+          'neighborhood': 'Centro',
+          'city': 'Curitiba',
+          'state': 'PR',
+          'postal_code': '80000-000',
+          'is_default': true,
+        },
+      ];
       var created = false;
       Map<String, dynamic>? payload;
       final api = ApiClient(
@@ -240,22 +295,15 @@ void main() {
             case '/api/cart':
               return jsonResponse(cartJson(quantity: created ? 0 : 1));
             case '/api/addresses':
-              return jsonResponse({
-                'data': [
-                  {
-                    'id': 3,
-                    'label': 'Casa',
-                    'recipient_name': 'Leitor',
-                    'street': 'Rua Teste',
-                    'number': '123',
-                    'neighborhood': 'Centro',
-                    'city': 'Curitiba',
-                    'state': 'PR',
-                    'postal_code': '80000-000',
-                    'is_default': true,
-                  },
-                ],
-              });
+              if (request.method == 'POST') {
+                final address = {
+                  ...jsonDecode(request.body) as Map<String, dynamic>,
+                  'id': 4,
+                };
+                addresses.add(address);
+                return jsonResponse({'data': address}, status: 201);
+              }
+              return jsonResponse({'data': addresses});
             case '/api/orders':
               payload = jsonDecode(request.body) as Map<String, dynamic>;
               created = true;
@@ -278,6 +326,27 @@ void main() {
           .state<NavigatorState>(find.byType(Navigator))
           .pushNamed('/finalizar');
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Novo endereço'));
+      await tester.pumpAndSettle();
+      for (final entry in {
+        'label': 'Trabalho',
+        'recipient_name': 'Leitor',
+        'postal_code': '80000-000',
+        'state': 'PR',
+        'city': 'Curitiba',
+        'neighborhood': 'Centro',
+        'street': 'Rua Nova',
+        'number': '456',
+      }.entries) {
+        final field = find.byKey(ValueKey('field-${entry.key}'));
+        await tester.ensureVisible(field);
+        await tester.enterText(field, entry.value);
+      }
+      await tester.ensureVisible(find.text('Salvar'));
+      await tester.tap(find.text('Salvar'));
+      await tester.pumpAndSettle();
+      expect(addresses.first['is_default'], isTrue);
+      expect(addresses.last['is_default'], isFalse);
       await tester.scrollUntilVisible(
         find.text('Criar pedido').hitTestable(),
         250,
@@ -285,8 +354,9 @@ void main() {
       );
       await tester.tap(find.text('Criar pedido'));
       await tester.pumpAndSettle();
-      expect(payload, {'address_id': 3, 'payment_method': 'pix'});
+      expect(payload, {'address_id': 4, 'payment_method': 'pix'});
       expect(find.text('Pedido criado!'), findsOneWidget);
+      expect(find.textContaining('Pago em'), findsNothing);
       await tester.scrollUntilVisible(
         find.text('Confirmar pagamento de teste').hitTestable(),
         200,

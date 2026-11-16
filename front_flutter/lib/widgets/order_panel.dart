@@ -135,6 +135,14 @@ class OrderPanel extends StatelessWidget {
                 )
               else
                 _products(),
+              if (showAddress && !admin) ...[
+                const SizedBox(height: 20),
+                _shippingAddress(),
+                const SizedBox(height: 20),
+                _summaryRow('Subtotal', order.formattedSubtotal),
+                const SizedBox(height: 12),
+                _summaryRow('Frete', order.formattedShippingCost),
+              ],
               const Divider(height: 28, color: Color(0xFFEBE7EE)),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
@@ -152,6 +160,16 @@ class OrderPanel extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
+                      if (showAddress && !admin && order.paidAt != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Pago em ${formatOrderDate(order.paidAt)}',
+                          style: const TextStyle(
+                            color: StoreColors.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Text(
                         'Total: ${order.formattedTotal}',
@@ -206,15 +224,23 @@ class OrderPanel extends StatelessWidget {
                     ),
                 ],
               ),
-              if (showAddress && !admin) ...[
-                const SizedBox(height: 24),
-                _shippingAddress(),
-              ],
             ],
           ),
         ),
       ],
     ),
+  );
+
+  Widget _summaryRow(String label, String value) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          label,
+          style: const TextStyle(color: StoreColors.muted, fontSize: 13),
+        ),
+      ),
+      Text(value, style: const TextStyle(fontSize: 13)),
+    ],
   );
 
   Widget _products() => Column(

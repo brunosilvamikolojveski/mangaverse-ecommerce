@@ -29,6 +29,8 @@ class StoreOrder {
   const StoreOrder({
     required this.id,
     required this.status,
+    required this.subtotal,
+    required this.shippingCost,
     required this.total,
     required this.address,
     required this.items,
@@ -38,6 +40,8 @@ class StoreOrder {
   factory StoreOrder.fromJson(Map<String, dynamic> json) => StoreOrder(
     id: json['id'] as int,
     status: json['status'] as String,
+    subtotal: json['subtotal'].toString(),
+    shippingCost: json['shipping_cost'].toString(),
     total: json['total'].toString(),
     address: json['shipping_address'] as Map<String, dynamic>,
     items: (json['items'] as List)
@@ -50,6 +54,8 @@ class StoreOrder {
   );
   final int id;
   final String status;
+  final String subtotal;
+  final String shippingCost;
   final String total;
   final String? placedAt;
   final Map<String, dynamic> address;
@@ -57,7 +63,12 @@ class StoreOrder {
   final List<Map<String, dynamic>> payments;
   bool get isPending => status == 'pending';
   String get statusLabel => orderStatuses[status] ?? status;
+  String get formattedSubtotal => formatMoney(subtotal);
+  String get formattedShippingCost =>
+      num.parse(shippingCost) == 0 ? 'Grátis' : formatMoney(shippingCost);
   String get formattedTotal => formatMoney(total);
+  String? get paidAt =>
+      payments.isEmpty ? null : payments.first['paid_at'] as String?;
   String get paymentLabel => payments.isEmpty
       ? 'Não informado'
       : paymentMethods[payments.first['method']] ??

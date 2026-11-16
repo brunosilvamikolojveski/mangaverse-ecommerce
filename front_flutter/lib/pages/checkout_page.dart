@@ -31,7 +31,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({int? selectedAddressId}) async {
     setState(() {
       _loading = true;
       _error = null;
@@ -42,6 +42,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
         setState(() {
           _addresses = addresses;
           _addressId =
+              addresses
+                  .where((a) => a.id == selectedAddressId)
+                  .firstOrNull
+                  ?.id ??
               addresses.where((a) => a.isDefault).firstOrNull?.id ??
               addresses.firstOrNull?.id;
         });
@@ -54,16 +58,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> _newAddress() async {
+    int? createdAddressId;
     final saved = await showEditor(
       context,
       title: 'Novo endereço de entrega',
       fields: addressFields,
       initial: {'is_default': _addresses.isEmpty},
       onSave: (values) async {
-        await widget.account.saveAddress(values);
+        final address = await widget.account.saveAddress(values);
+        createdAddressId = address.id;
       },
     );
-    if (saved == true && mounted) await _load();
+    if (saved == true && mounted) {
+      await _load(selectedAddressId: createdAddressId);
+    }
   }
 
   Future<void> _create() async {
