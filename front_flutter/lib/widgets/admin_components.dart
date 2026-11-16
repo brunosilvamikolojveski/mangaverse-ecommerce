@@ -76,6 +76,7 @@ class AdminTabs extends StatelessWidget {
                       vertical: 10,
                     ),
                     textStyle: const TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0,

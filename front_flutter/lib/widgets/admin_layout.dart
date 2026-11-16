@@ -105,7 +105,8 @@ class AdminLayout extends StatelessWidget {
                                     horizontal: 14,
                                   ),
                                   textStyle: const TextStyle(
-                                    fontSize: 12,
+                                    fontFamily: 'Inter',
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     letterSpacing: 0,
                                   ),
@@ -194,61 +195,101 @@ class AdminStat extends StatelessWidget {
     final viewport = MediaQuery.sizeOf(context).width;
     final contentWidth = (viewport - (viewport < 720 ? 28 : 48)).clamp(0, 1440);
     final count = viewport < 900 ? 2 : columns;
+    final width = (contentWidth - (count - 1) * 16) / count;
+    final compact = width < 260;
+    final number = Text(
+      value,
+      style: const TextStyle(
+        fontSize: 28,
+        height: 1,
+        fontWeight: FontWeight.w600,
+        color: StoreColors.purple,
+      ),
+    );
+    final description = caption == null
+        ? null
+        : Text(
+            caption!,
+            textAlign: compact ? TextAlign.start : TextAlign.end,
+            style: const TextStyle(color: StoreColors.muted, fontSize: 11),
+          );
     return SizedBox(
-      width: (contentWidth - (count - 1) * 16) / count,
+      width: width,
       child: Container(
-        constraints: BoxConstraints(minHeight: caption == null ? 96 : 140),
-        padding: EdgeInsets.all(viewport < 720 ? 14 : 18),
+        clipBehavior: Clip.antiAlias,
+        constraints: BoxConstraints(minHeight: caption == null ? 90 : 112),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: const Color(0xFFE8E7ED)),
-          borderRadius: BorderRadius.circular(11),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x080C1037),
+              color: Color(0x0D0C1037),
               blurRadius: 7,
               offset: Offset(0, 2),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (accent != null || caption != null) ...[
-              Container(
-                width: 26,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(3),
-                ),
+            if (accent != null)
+              SizedBox(height: 3, child: ColoredBox(color: accent!)),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                18,
+                accent == null ? 19 : 16,
+                18,
+                18,
               ),
-              const SizedBox(height: 12),
-            ],
-            Text(
-              label,
-              style: const TextStyle(
-                color: StoreColors.muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: compact && caption != null ? 34 : 0,
+                    ),
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: StoreColors.muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: caption == null
+                        ? 14
+                        : compact
+                        ? 20
+                        : 28,
+                  ),
+                  if (compact)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        number,
+                        if (description != null) ...[
+                          const SizedBox(height: 8),
+                          description,
+                        ],
+                      ],
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        number,
+                        if (description != null) ...[
+                          const SizedBox(width: 12),
+                          Expanded(child: description),
+                        ],
+                      ],
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 27,
-                fontWeight: FontWeight.w600,
-                color: StoreColors.purple,
-              ),
-            ),
-            if (caption != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                caption!,
-                style: const TextStyle(color: StoreColors.muted, fontSize: 11),
-              ),
-            ],
           ],
         ),
       ),

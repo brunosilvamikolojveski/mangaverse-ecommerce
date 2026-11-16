@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -152,6 +153,76 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Acesso restrito'), findsOneWidget);
       expect(adminPaths, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'atualiza pedidos sem esconder a lista e permite tentar novamente após falha',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1050);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var reads = 0;
+      var refresh = Completer<http.Response>();
+      final api = ApiClient(
+        client: MockClient((request) async {
+          if (request.url.path == '/api/admin/orders') {
+            reads++;
+            if (reads == 1) {
+              return jsonResponse({
+                'data': [orderJson()['data']],
+              });
+            }
+            return refresh.future;
+          }
+          if (request.url.path == '/api/user') {
+            return jsonResponse({'data': userJson()..['role'] = 'admin'});
+          }
+          final session = guestSessionResponse(request);
+          if (session != null) return session;
+          if (request.url.path == '/api/categories') {
+            return jsonResponse({'data': []});
+          }
+          return jsonResponse(catalogJson([]));
+        }),
+      );
+      addTearDown(api.close);
+      await tester.pumpWidget(MangaverseApp(api: api));
+      await tester.pumpAndSettle();
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .pushNamed('/admin/pedidos');
+      await tester.pumpAndSettle();
+      expect(find.text('PEDIDO #9'), findsOneWidget);
+      await tester.tap(find.text('Atualizar pedidos'));
+      await tester.pump();
+      expect(find.text('Atualizando…'), findsOneWidget);
+      expect(find.text('PEDIDO #9'), findsOneWidget);
+      await tester.tap(find.text('Atualizando…'));
+      await tester.pump();
+      expect(reads, 2);
+      refresh.complete(
+        jsonResponse({'message': 'Falha temporária'}, status: 500),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('PEDIDO #9'), findsOneWidget);
+      expect(
+        find.text('Não foi possível concluir a solicitação. Tente novamente.'),
+        findsOneWidget,
+      );
+      refresh = Completer<http.Response>();
+      await tester.tap(find.text('Atualizar pedidos'));
+      await tester.pump();
+      refresh.complete(
+        jsonResponse({
+          'data': [orderJson(status: 'paid')['data']],
+        }),
+      );
+      await tester.pumpAndSettle();
+      expect(reads, 3);
+      expect(find.text('Pago'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

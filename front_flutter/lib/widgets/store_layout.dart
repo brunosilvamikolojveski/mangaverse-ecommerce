@@ -119,6 +119,7 @@ class StoreHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 minimumSize: const Size(40, 40),
                 textStyle: const TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
                   letterSpacing: 0,

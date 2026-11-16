@@ -54,6 +54,15 @@ class OrderPanel extends StatelessWidget {
       color: Colors.white,
       border: Border.all(color: const Color(0xFFEBE7EE)),
       borderRadius: BorderRadius.circular(admin ? 12 : 8),
+      boxShadow: admin
+          ? const [
+              BoxShadow(
+                color: Color(0x0A0C1037),
+                blurRadius: 7,
+                offset: Offset(0, 2),
+              ),
+            ]
+          : null,
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,9 +83,10 @@ class OrderPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pedido #${order.id}',
+                    admin ? 'PEDIDO #${order.id}' : 'Pedido #${order.id}',
                     style: TextStyle(
-                      fontSize: admin ? 12 : 16,
+                      fontSize: admin ? 11 : 16,
+                      letterSpacing: admin ? .7 : 0,
                       fontWeight: FontWeight.w600,
                       color: admin ? StoreColors.purple : StoreColors.ink,
                     ),
@@ -116,9 +126,9 @@ class OrderPanel extends StatelessWidget {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(flex: 3, child: _products()),
+                        Expanded(flex: 15, child: _products()),
                         const SizedBox(width: 25),
-                        Expanded(flex: 2, child: _shippingAddress()),
+                        Expanded(flex: 8, child: _shippingAddress()),
                       ],
                     );
                   },
@@ -212,7 +222,7 @@ class OrderPanel extends StatelessWidget {
     children: [
       for (final item in order.items)
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.only(bottom: admin ? 16 : 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -221,20 +231,22 @@ class OrderPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${item.title} · Vol. ${item.volume}',
+                      '${admin ? '${item.quantity} × ' : ''}${item.title} · Vol. ${item.volume}',
                       style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF514D54),
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${item.quantity} × ${formatMoney(item.unitPrice)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: StoreColors.muted,
+                    if (!admin) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        '${item.quantity} × ${formatMoney(item.unitPrice)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: StoreColors.muted,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -271,9 +283,14 @@ class OrderPanel extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 7),
         Text(
-          '${admin ? '' : '${order.address['recipient_name']}\n'}${order.address['street']}, ${order.address['number']}${order.address['complement'] == null ? '' : ' · ${order.address['complement']}'}\n${order.address['neighborhood']} · ${order.address['city']} / ${order.address['state']}\nCEP ${order.address['postal_code']}',
+          '${admin ? '' : '${order.address['recipient_name']}\n'}'
+          '${order.address['street']}, ${order.address['number']}'
+          '${order.address['complement'] == null ? '' : ' · ${order.address['complement']}'}'
+          '${admin ? ' — ' : '\n'}${order.address['neighborhood']}, '
+          '${order.address['city']} - ${order.address['state']}'
+          '${admin ? ' · ' : '\n'}CEP ${order.address['postal_code']}',
           style: const TextStyle(
             color: StoreColors.muted,
             fontSize: 12,

@@ -17,7 +17,8 @@ class AdminOrdersPage extends StatefulWidget {
 class _AdminOrdersPageState extends State<AdminOrdersPage> {
   List<StoreOrder> _orders = [];
   String _status = 'all';
-  bool _loading = true;
+  bool _loading = false;
+  bool _hasLoaded = false;
   int? _busyId;
   String? _error;
   @override
@@ -27,15 +28,26 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   }
 
   Future<void> _load() async {
+    if (_loading || _busyId != null) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final orders = await widget.orders.list(admin: true);
-      if (mounted) setState(() => _orders = orders);
+      if (mounted) {
+        setState(() {
+          _orders = orders;
+          _hasLoaded = true;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() => _error = errorMessage(error));
+      if (!mounted) return;
+      if (_hasLoaded) {
+        showStoreNotice(context, errorMessage(error), isError: true);
+      } else {
+        setState(() => _error = errorMessage(error));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -81,10 +93,15 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           AdminHeading(
             'Gestão de pedidos',
             subtitle: 'Veja as compras recentes e acompanhe o andamento das entregas.',
-            action: OutlinedButton.icon(
+            action: TextButton.icon(
               onPressed: _loading || _busyId != null ? null : _load,
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Atualizar pedidos'),
+              icon: _loading
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh, size: 17),
+              label: Text(_loading ? 'Atualizando…' : 'Atualizar pedidos'),
             ),
           ),
           Wrap(
@@ -100,7 +117,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
               AdminStat(
                 'Aguardando pagamento',
                 '${_orders.where((o) => o.isPending).length}',
-                caption: 'Pedidos pendentes',
+                caption: 'Precisam de atenção',
                 accent: const Color(0xFFE4A829),
                 columns: 4,
               ),
@@ -140,7 +157,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
             onChanged: (value) => setState(() => _status = value),
           ),
           const SizedBox(height: 20),
-          if (_loading)
+          if (_loading && !_hasLoaded)
             const Padding(
               padding: EdgeInsets.all(48),
               child: Center(child: CircularProgressIndicator()),
@@ -177,7 +194,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                                   color: Color(0xFFD8B8B8),
                                 ),
                               ),
-                              onPressed: _busyId != null
+                              onPressed: _loading || _busyId != null
                                   ? null
                                   : () => _update(order),
                               child: Text(
@@ -187,7 +204,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
                               ),
                             )
                           : FilledButton(
-                              onPressed: _busyId != null
+                              onPressed: _loading || _busyId != null
                                   ? null
                                   : () => _update(order),
                               child: Text(
