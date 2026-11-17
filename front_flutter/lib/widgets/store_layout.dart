@@ -312,7 +312,7 @@ class _StoreBanner extends StatelessWidget {
                     if (onRetry != null)
                       TextButton(
                         onPressed: onRetry,
-                        child: const Text('Recarregar conta e carrinho'),
+                        child: const Text('Tentar novamente'),
                       ),
                   ],
                 ),

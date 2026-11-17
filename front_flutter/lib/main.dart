@@ -293,9 +293,11 @@ class _MangaverseAppState extends State<MangaverseApp> {
           );
         }
 
-        return MaterialPageRoute<void>(
+        return PageRouteBuilder<void>(
           settings: settings,
-          builder: (_) => page,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, _, _) => page,
         );
       },
     );

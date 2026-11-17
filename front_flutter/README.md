@@ -12,13 +12,13 @@ docker compose up -d --build
 
 O Docker baixa o SDK Flutter, compila este frontend e serve a loja em <http://localhost>. Não é necessário instalar Flutter no computador para esse modo. Na primeira instalação, configure a API e o banco seguindo o README da raiz.
 
-Para voltar ao Vue, preservado em `front/`:
+Com o ambiente Docker já iniciado, execute na raiz do repositório para voltar ao Vue, preservado em `front/`:
 
 ```bash
-docker compose -f compose.yaml -f compose.vue.yaml up -d --build --no-deps frontend
+./frontend vue
 ```
 
-Para retornar ao Flutter, execute `docker compose up -d --build --no-deps frontend`.
+Para retornar ao Flutter, execute `./frontend flutter`.
 
 ## Desenvolver localmente
 

@@ -68,16 +68,16 @@ Não use `docker compose down -v` para atualizar o projeto: esse comando apaga o
 
 ## Alternar entre Flutter e Vue no Docker
 
-O Compose padrão serve Flutter em <http://localhost>. Para abrir a versão Vue no mesmo endereço:
+Com o ambiente Docker já iniciado, use estes comandos na pasta principal do projeto. Para abrir a versão Vue em <http://localhost>:
 
 ```bash
-docker compose -f compose.yaml -f compose.vue.yaml up -d --build --no-deps frontend
+./frontend vue
 ```
 
 Para voltar ao Flutter:
 
 ```bash
-docker compose up -d --build --no-deps frontend
+./frontend flutter
 ```
 
 Os comandos trocam apenas o frontend. A API, os uploads e o banco continuam no mesmo ambiente.
@@ -100,7 +100,7 @@ VITE_API_BASE_URL=http://localhost:8000
 
 O arquivo `.env.local` é local e não deve ser enviado ao Git.
 
-O Vue servido pelo Docker usa o próprio host para acessar a API. Caso precise trocar esse endereço, defina `VITE_API_BASE_URL` no `.env` da raiz e reconstrua usando o comando com `compose.vue.yaml` acima. Essa variável é aplicada durante o build do Vue.
+O Vue servido pelo Docker usa o próprio host para acessar a API. Caso precise trocar esse endereço, defina `VITE_API_BASE_URL` no `.env` da raiz e reconstrua usando `./frontend vue`. Essa variável é aplicada durante o build do Vue.
 
 ## Desenvolver o frontend Flutter Web
 
